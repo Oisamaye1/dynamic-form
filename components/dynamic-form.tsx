@@ -17,6 +17,8 @@ import { useToast } from "@/components/ui/use-toast"
 import { submitForm } from "@/actions/form-actions"
 import { Alert, AlertDescription } from "@/components/ui/alert"
 import { Badge } from "@/components/ui/badge"
+// Import the FormSuccess component at the top of the file
+import { FormSuccess } from "@/components/form-success"
 
 // Define the question types
 type QuestionType = "radio" | "text" | "textarea" | "select" | "checkbox" | "date" | "number"
@@ -1113,6 +1115,9 @@ export default function DynamicForm() {
   }
 
   // Function to handle form submission
+  const [isSubmitted, setIsSubmitted] = useState<boolean>(false)
+  const [formState, setFormState] = useState<{ googleDriveSuccess?: boolean } | null>(null)
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
 
@@ -1140,6 +1145,12 @@ export default function DynamicForm() {
           title: "Form submitted",
           description: "Your form has been submitted successfully",
         })
+
+        // Set the form state with the googleDriveSuccess value
+        setFormState({ googleDriveSuccess: result.googleDriveSuccess })
+
+        // Set isSubmitted to true
+        setIsSubmitted(true)
 
         // Clear form after submission
         setAnswers({})
@@ -1631,6 +1642,8 @@ export default function DynamicForm() {
           </AlertDescription>
         </Alert>
       )}
+
+      {isSubmitted && <FormSuccess googleDriveSuccess={formState?.googleDriveSuccess} />}
     </form>
   )
 }

@@ -3,6 +3,7 @@
 import { createServerSupabaseClient } from "@/lib/supabase"
 import { revalidatePath } from "next/cache"
 import { logError } from "@/lib/debug-utils"
+import { saveFormSubmissionToDrive } from "@/lib/google-drive"
 
 // Save form progress (requires authentication)
 export async function saveFormProgress(
@@ -84,16 +85,40 @@ export async function submitForm(formData: Record<string, string>) {
     const supabase = createServerSupabaseClient()
 
     // Insert the form response as anonymous
-    const { error: insertError } = await supabase.from("form_responses").insert({
-      user_id: null, // Always null since we don't have authentication
-      form_data: formData,
-      is_anonymous: true, // Always anonymous
-    })
+    const { data, error: insertError } = await supabase
+      .from("form_responses")
+      .insert({
+        user_id: null, // Always null since we don't have authentication
+        form_data: formData,
+        is_anonymous: true, // Always anonymous
+      })
+      .select("id")
+      .single()
 
     if (insertError) throw insertError
 
+    // Get the user's name from the form data
+    const userName = formData.name || formData.fullName || formData.firstName || "Anonymous"
+
+    // Save to Google Drive
+    const driveResult = await saveFormSubmissionToDrive(userName, formData, data.id)
+
+    // Update the form response with Google Drive information if successful
+    if (driveResult.success && driveResult.fileId) {
+      await supabase
+        .from("form_responses")
+        .update({
+          google_drive_file_id: driveResult.fileId,
+          google_drive_folder_id: driveResult.userFolderId,
+        })
+        .eq("id", data.id)
+    }
+
     revalidatePath("/admin/dashboard")
-    return { success: true }
+    return {
+      success: true,
+      googleDriveSuccess: driveResult.success,
+    }
   } catch (error) {
     logError("submitForm", error)
     return { success: false, error: "Failed to submit form" }
@@ -145,7 +170,9 @@ export async function getAllFormResponses() {
         form_data,
         created_at,
         user_id,
-        is_anonymous
+        is_anonymous,
+        google_drive_file_id,
+        google_drive_folder_id
       `)
       .order("created_at", { ascending: false })
 

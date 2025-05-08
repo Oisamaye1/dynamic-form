@@ -59,12 +59,11 @@
     "vaul": "^0.9.6",
     "zod": "^3.24.1",
     "@emotion/is-prop-valid": "latest",
-    "webpack": "latest",
     "@supabase/supabase-js": "latest",
     "@react-pdf/renderer": "latest",
-    "framer-motion": "latest",
-    "path": "latest",
-    "mini-css-extract-plugin": "latest"
+    "googleapis": "latest",
+    "google-auth-library": "latest",
+    "framer-motion": "latest"
   },
   "devDependencies": {
     "@types/node": "^22",
