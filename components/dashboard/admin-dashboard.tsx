@@ -1,92 +1,79 @@
-import { createServerSupabaseClient } from "@/lib/supabase"
+import { getAllFormResponses } from "@/actions/form-actions"
 import { formatDate } from "@/lib/utils"
-import { Eye } from "lucide-react"
 import Link from "next/link"
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
 import { Button } from "@/components/ui/button"
-import { checkAdminSession } from "@/actions/admin-actions"
-import { logError } from "@/lib/debug-utils"
+import { Eye } from "lucide-react"
+import { ExcelDownloadButton } from "@/components/excel/excel-download-button"
 
 export async function AdminDashboard() {
-  try {
-    // Check if user is admin
-    const { isAdmin } = await checkAdminSession()
+  const responses = await getAllFormResponses()
 
-    if (!isAdmin) {
-      throw new Error("Unauthorized")
-    }
-
-    // If user is admin, fetch all responses
-    const supabase = createServerSupabaseClient()
-    const { data: responses, error } = await supabase
-      .from("form_responses")
-      .select(`
-        id,
-        form_data,
-        created_at,
-        is_anonymous
-      `)
-      .order("created_at", { ascending: false })
-
-    if (error) throw error
-
-    if (!responses || responses.length === 0) {
-      return (
-        <div className="text-center py-10">
-          <p className="text-muted-foreground">No form submissions yet.</p>
-        </div>
-      )
-    }
-
-    return (
-      <Table>
-        <TableHeader>
-          <TableRow>
-            <TableHead>Submission Date</TableHead>
-            <TableHead>Form Type</TableHead>
-            <TableHead className="text-right">Actions</TableHead>
-          </TableRow>
-        </TableHeader>
-        <TableBody>
-          {responses.map((response) => {
-            const formType = response.form_data.purpose
-              ? response.form_data.purpose === "business"
-                ? "Business Inquiry"
-                : response.form_data.purpose === "personal"
-                  ? "Personal Project"
-                  : response.form_data.purpose === "feedback"
-                    ? "Feedback"
-                    : response.form_data.purpose === "research"
-                      ? "Research"
-                      : response.form_data.purpose === "partnership"
-                        ? "Partnership"
-                        : "Unknown"
-              : "Unknown"
-
-            return (
-              <TableRow key={response.id}>
-                <TableCell>{formatDate(response.created_at)}</TableCell>
-                <TableCell>{formType}</TableCell>
-                <TableCell className="text-right">
-                  <Button variant="ghost" size="sm" asChild>
-                    <Link href={`/admin/responses/${response.id}`}>
-                      <Eye className="h-4 w-4 mr-2" />
-                      View
-                    </Link>
-                  </Button>
-                </TableCell>
-              </TableRow>
-            )
-          })}
-        </TableBody>
-      </Table>
-    )
-  } catch (error) {
-    logError("AdminDashboard", error)
-    return (
-      <div className="text-center py-10">
-        <p className="text-red-500">You don't have permission to view this data.</p>
+  return (
+    <div className="space-y-4">
+      <div className="flex justify-end mb-4">
+        <ExcelDownloadButton url="/api/excel/all" variant="default" className="bg-green-600 hover:bg-green-700">
+          Export All to Excel
+        </ExcelDownloadButton>
       </div>
-    )
-  }
+
+      <div className="rounded-md border">
+        <div className="relative w-full overflow-auto">
+          <table className="w-full caption-bottom text-sm">
+            <thead className="[&_tr]:border-b">
+              <tr className="border-b transition-colors hover:bg-muted/50 data-[state=selected]:bg-muted">
+                <th className="h-12 px-4 text-left align-middle font-medium">ID</th>
+                <th className="h-12 px-4 text-left align-middle font-medium">Date</th>
+                <th className="h-12 px-4 text-left align-middle font-medium">Name</th>
+                <th className="h-12 px-4 text-left align-middle font-medium">Email</th>
+                <th className="h-12 px-4 text-left align-middle font-medium">Type</th>
+                <th className="h-12 px-4 text-left align-middle font-medium">Actions</th>
+              </tr>
+            </thead>
+            <tbody className="[&_tr:last-child]:border-0">
+              {responses.length === 0 ? (
+                <tr>
+                  <td colSpan={6} className="p-4 text-center text-muted-foreground">
+                    No submissions yet
+                  </td>
+                </tr>
+              ) : (
+                responses.map((response) => {
+                  const formData = response.form_data || {}
+                  return (
+                    <tr
+                      key={response.id}
+                      className="border-b transition-colors hover:bg-muted/50 data-[state=selected]:bg-muted"
+                    >
+                      <td className="p-4 align-middle">{response.id.substring(0, 8)}...</td>
+                      <td className="p-4 align-middle">{formatDate(response.created_at)}</td>
+                      <td className="p-4 align-middle">{formData.name || "Anonymous"}</td>
+                      <td className="p-4 align-middle">{formData.contact_info || "N/A"}</td>
+                      <td className="p-4 align-middle capitalize">{formData.purpose || "N/A"}</td>
+                      <td className="p-4 align-middle">
+                        <div className="flex items-center gap-2">
+                          <Button asChild size="sm" variant="outline">
+                            <Link href={`/admin/responses/${response.id}`}>
+                              <Eye className="h-4 w-4 mr-1" /> View
+                            </Link>
+                          </Button>
+                          <ExcelDownloadButton
+                            url={`/api/excel/${response.id}`}
+                            size="sm"
+                            variant="outline"
+                            className="text-green-600 border-green-600 hover:bg-green-50"
+                          >
+                            Excel
+                          </ExcelDownloadButton>
+                        </div>
+                      </td>
+                    </tr>
+                  )
+                })
+              )}
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+  )
 }

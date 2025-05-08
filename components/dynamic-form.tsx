@@ -1116,7 +1116,7 @@ export default function DynamicForm() {
 
   // Function to handle form submission
   const [isSubmitted, setIsSubmitted] = useState<boolean>(false)
-  const [formState, setFormState] = useState<{ googleDriveSuccess?: boolean } | null>(null)
+  const [formState, setFormState] = useState<null | {}>(null)
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
@@ -1146,8 +1146,8 @@ export default function DynamicForm() {
           description: "Your form has been submitted successfully",
         })
 
-        // Set the form state with the googleDriveSuccess value
-        setFormState({ googleDriveSuccess: result.googleDriveSuccess })
+        // Set formState to a simple object
+        setFormState({})
 
         // Set isSubmitted to true
         setIsSubmitted(true)
@@ -1643,7 +1643,7 @@ export default function DynamicForm() {
         </Alert>
       )}
 
-      {isSubmitted && <FormSuccess googleDriveSuccess={formState?.googleDriveSuccess} />}
+      {isSubmitted && <FormSuccess />}
     </form>
   )
 }

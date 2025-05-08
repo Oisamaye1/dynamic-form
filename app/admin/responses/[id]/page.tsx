@@ -8,6 +8,7 @@ import { checkAdminSession } from "@/actions/admin-actions"
 import { createServerSupabaseClient } from "@/lib/supabase"
 import { formatFormData } from "@/lib/form-utils"
 import { logError } from "@/lib/debug-utils"
+import { ExcelDownloadButton } from "@/components/excel/excel-download-button"
 
 export default async function AdminResponseDetailPage({ params }: { params: { id: string } }) {
   try {
@@ -49,6 +50,15 @@ export default async function AdminResponseDetailPage({ params }: { params: { id
             </Link>
           </Button>
           <h1 className="text-3xl font-bold">Response Details</h1>
+          <div className="ml-auto">
+            <ExcelDownloadButton
+              url={`/api/excel/${params.id}`}
+              variant="default"
+              className="bg-green-600 hover:bg-green-700"
+            >
+              Export to Excel
+            </ExcelDownloadButton>
+          </div>
         </div>
 
         <Card className="mb-8">
